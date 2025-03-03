@@ -21,6 +21,10 @@ def browse_file():
     #將listTemp轉換為np.array
     tmplistTemp = np.array(tmplistTemp)
     
+    #計算標準差
+    標準差 = round(np.std(tmplistTemp[:,0]),2)
+    #
+
     #tmplistTemp.showinfo顯示出來,數字顯示到小數點第二位
     # messagebox.showinfo("檔案內容:", "最大值:"
     # + str(round(np.max(tmplistTemp[:,0]),2)) + "\n"
