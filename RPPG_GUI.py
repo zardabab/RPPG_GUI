@@ -21,9 +21,25 @@ def browse_file():
     #將listTemp轉換為np.array
     tmplistTemp = np.array(tmplistTemp)
     
-    #計算標準差
-    標準差 = round(np.std(tmplistTemp[:,0]),2)
-    #
+
+    #處理離群值
+    _value = tmplistTemp[:,0].astype(float)
+    
+    # """計算平均值與標準差"""
+    mean_val = np.nanmean(_value)
+    std_val = np.nanstd(_value)
+    lower_bound = mean_val - 2 * std_val
+    upper_bound = mean_val + 2 * std_val
+    print(f"--離群值範圍: 小於 {lower_bound:.2f} 或 大於 {upper_bound:.2f} 的數據將被排除")
+    try:
+        
+        """篩選數據"""
+        listTemp = [(_value, time_second) for value, time_second in tmplistTemp if lower_bound <= value <= upper_bound]   
+    except Exception as e:
+        print(f"篩選數據失敗: {e}")
+        messagebox.showinfo("篩選數據失敗", e)
+        
+
 
     #tmplistTemp.showinfo顯示出來,數字顯示到小數點第二位
     # messagebox.showinfo("檔案內容:", "最大值:"
