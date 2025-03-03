@@ -808,51 +808,51 @@ def preProcessing(timeWindow:int,第幾個timeWindow:int,listTemp:list):
 
     #前處理:巴特沃夫處理器(帶通濾波器) ->  平滑化 -> 基線飄移(校準) -> 歸一化 -> 平滑化
     
-    #處理離群值
-    _value = listTemp[:,0]
-    # """計算平均值與標準差"""
-    mean_val = np.mean(_value)
-    std_val = np.std(_value)
-    lower_bound = mean_val - 2 * std_val
-    upper_bound = mean_val + 2 * std_val
-    print(f"--離群值範圍: 小於 {lower_bound:.2f} 或 大於 {upper_bound:.2f} 的數據將被排除")
+    # #處理離群值
+    # _value = listTemp[:,0]
+    # # """計算平均值與標準差"""
+    # mean_val = np.mean(_value)
+    # std_val = np.std(_value)
+    # lower_bound = mean_val - 2 * std_val
+    # upper_bound = mean_val + 2 * std_val
+    # print(f"--離群值範圍: 小於 {lower_bound:.2f} 或 大於 {upper_bound:.2f} 的數據將被排除")
 
-    """篩選數據"""
-    listTemp = [(_value, time_second) for value, time_second in listTemp if lower_bound <= value <= upper_bound]
+    # """篩選數據"""
+    # listTemp = [(_value, time_second) for value, time_second in listTemp if lower_bound <= value <= upper_bound]
 
-     # """重新編排 y 軸"""
-    # listTemp = [(value, new_y, time_second) for new_y, (value, time_second) in enumerate(filtered_data)]
+    #  # """重新編排 y 軸"""
+    # # listTemp = [(value, new_y, time_second) for new_y, (value, time_second) in enumerate(filtered_data)]
 
-    """計算離群值數量"""
-    outlier_count = len(_value) - len(listTemp)
-    total_after_outlier_removal = len(listTemp)
-    print(f"--離群值數量: {outlier_count}")
-    print(f"--扣除離群值後剩餘: {total_after_outlier_removal}")
+    # """計算離群值數量"""
+    # outlier_count = len(_value) - len(listTemp)
+    # total_after_outlier_removal = len(listTemp)
+    # print(f"--離群值數量: {outlier_count}")
+    # print(f"--扣除離群值後剩餘: {total_after_outlier_removal}")
     
-    print(f"輸出格式為\n{listTemp}")  ## list
+    # print(f"輸出格式為\n{listTemp}")  ## list
 
-    """繪製訊號圖"""
-    plt.figure(figsize=(12, 5))
+    # """繪製訊號圖"""
+    # plt.figure(figsize=(12, 5))
 
-    # 從list中提取值
-    filtered_values = [val for val, _ in listTemp]
-    time_second_index = [time_second for _, time_second in listTemp]
+    # # 從list中提取值
+    # filtered_values = [val for val, _ in listTemp]
+    # time_second_index = [time_second for _, time_second in listTemp]
 
-    plt.plot(time_second_index, filtered_values, color="b", markersize=3, linestyle="-", label="Signal")
+    # plt.plot(time_second_index, filtered_values, color="b", markersize=3, linestyle="-", label="Signal")
 
-    # 添加均值虛線
-    plt.axhline(mean_val, color="r", linestyle="--", label="Mean")
+    # # 添加均值虛線
+    # plt.axhline(mean_val, color="r", linestyle="--", label="Mean")
 
-    # 標記離群值範圍
-    plt.fill_between(time_second_index, lower_bound, upper_bound, color="gray", alpha=0.2, label="Mean ± 2STD")
+    # # 標記離群值範圍
+    # plt.fill_between(time_second_index, lower_bound, upper_bound, color="gray", alpha=0.2, label="Mean ± 2STD")
 
-    plt.xlabel("Time (seconds)")
-    plt.ylabel("Value")
-    plt.title("Filtered Signal")
-    plt.legend()
-    plt.grid(True)
+    # plt.xlabel("Time (seconds)")
+    # plt.ylabel("Value")
+    # plt.title("Filtered Signal")
+    # plt.legend()
+    # plt.grid(True)
 
-    plt.show()
+    # plt.show()
 
     #帶通濾波
     # try:
