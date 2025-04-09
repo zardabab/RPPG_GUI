@@ -577,7 +577,9 @@ def Kurtosis(data):
     # kurtosis
     # array
     # The kurtosis of values along an axis, returning NaN where all values are equal.
-    return scipy.stats.kurtosistest(data)
+    #回傳數值就好
+    return scipy.stats.kurtosis(data, axis=0, fisher=True, bias=False)
+    # return scipy.stats.kurtosistest(data)
 
 #bias = False意思是消除偏差，同stats.skew()的用法與定義。而fisher = True就是以Fisher的定義，計算並輸出峰度值。
 def skewness(data):
@@ -674,6 +676,9 @@ def writeExecl(list,fileName):
     
 
     for i in range(len(list)):
+        #先將list[i]的字串裡的[]還有"和'都去掉
+        list[i] = str(list[i]).replace("[","").replace("]","").replace("'","").replace('"','')
+        
         # 把list[i]用逗號分割出此行的每個欄位
         tempList = str(list[i]).split(",")
         # 將list[i]的每個欄位寫入Excel的每個欄位
@@ -1287,16 +1292,17 @@ def 特徵值計算(listTemp):
     #1.Teager-Kaiser 能量算子(TKEO)的均值、變異數、四分位距、偏度共4個特徵
     TeagerKaiser = Teager_power_function(listTemp[:,0])
 
-    #均值
-    TKEO_mean = np.mean(TeagerKaiser)
+    #均值,四捨五入到小數點後第三位
+    TKEO_mean = round(np.mean(TeagerKaiser),3)
+    
     #變異數
-    TKEO_variance = np.var(TeagerKaiser)
+    TKEO_variance = round(np.var(TeagerKaiser),3)
     #四分位距
     q1 = np.percentile(TeagerKaiser, 25)
     q3 = np.percentile(TeagerKaiser, 75)
-    TKEO_iqr = q3 - q1
+    TKEO_iqr = round((q3 - q1),3)
     #偏度
-    TKEO_skewness = stats.skew(TeagerKaiser)
+    TKEO_skewness = round(stats.skew(TeagerKaiser),3)
 
     #2.心率
     #心率
@@ -1308,22 +1314,22 @@ def 特徵值計算(listTemp):
     # 確保 listTemp[:, 0] 是數值類型
     numeric_data = listTemp[:, 0].astype(float)
     
-    _Kurtosis = Kurtosis(numeric_data)
+    _Kurtosis = round(Kurtosis(numeric_data),3)
 
     #4.偏度
     #偏度是一種統計量，用於描述數據分佈的對稱性
     # 計算偏度
-    _skewness = skewness(numeric_data)
+    _skewness = round(skewness(numeric_data),3)
 
     #5.entropy
     #熵是一種統計量，用於描述數據的不確定性
     # 計算熵
-    _entropy = entropy(numeric_data)
+    _entropy = round(entropy(numeric_data),3)
 
     #6. 
     #光譜熵
     # 計算光證熵
-    _spectral_entropy = spectral_entropy(numeric_data, 15)
+    _spectral_entropy = round(spectral_entropy(numeric_data, 15),3)
 
     #7.
     #傅立葉變換
