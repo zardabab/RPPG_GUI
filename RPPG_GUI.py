@@ -7,7 +7,7 @@ import numpy as np
 import scipy.stats as stats
 
 # 定義全域變數
-tmplistTemp = []
+# tmplistTemp = []
 
 # 選取檔案的函式
 def browse_file():
@@ -19,11 +19,11 @@ def browse_file():
     #先將檔案中的所有數字讀取出來，並顯示統計數據
     tmplistTemp = pp.read_ALL_from_file(filename)
     #將listTemp轉換為np.array
-    tmplistTemp = np.array(tmplistTemp)
-    
+    # tmplistTemp = np.array(tmplistTemp)
+    # times = tmplistTemp[:2]
 
     #處理離群值
-    _value = tmplistTemp[:,0].astype(float)
+    _value = np.array(tmplistTemp)[:,0].astype(float)
     
     # """計算平均值與標準差"""
     mean_val = np.nanmean(_value)
@@ -32,15 +32,21 @@ def browse_file():
     upper_bound = mean_val + 2 * std_val
     print(f"--離群值範圍: 小於 {lower_bound:.2f} 或 大於 {upper_bound:.2f} 的數據將被排除")
     try:
-        
         """篩選數據"""
-        listTemp = [(_value, time_second) for value, time_second in tmplistTemp if lower_bound <= value <= upper_bound]   
+        # listTemp = [(_value, time_second) for value, time_second in tmplistTemp if lower_bound <= value <= upper_bound]   
+        listTemp = [(value,_count, time_second) for value,_count, time_second in tmplistTemp if lower_bound <= value <= upper_bound]
+        #重新編排listTemp的第二欄數據，使其從0開始
+        # listTemp = np.array(listTemp)
+        listTemp = [(value, i, _second) for i, (value, *_ , _second) in enumerate(listTemp)]
+        tmplistTemp = np.array(tmplistTemp)
+        listTemp = np.array(listTemp)
+        # pp.兩圖合併(tmplistTemp,listTemp,"離群值處理後")
     except Exception as e:
         print(f"篩選數據失敗: {e}")
         messagebox.showinfo("篩選數據失敗", e)
         
 
-
+    
     #tmplistTemp.showinfo顯示出來,數字顯示到小數點第二位
     # messagebox.showinfo("檔案內容:", "最大值:"
     # + str(round(np.max(tmplistTemp[:,0]),2)) + "\n"
@@ -54,18 +60,20 @@ def browse_file():
     # pp.draw_hist(tmplistTemp[:,0])
     #tmplistTemp,第一個參數是時間序列，第二個參數是數據
     #pp.drow_time_series(tmplistTemp[:,0],tmplistTemp[:,2])
-    #將listTemp的數據中最穩定的那段區間的value顯示出來，並將回傳的區間最大值放到畫面上的區間_from_entry和區間_to_entry
-    _max, _min,min_index,max_index = pp.draw_stable_section(tmplistTemp[:,0],tmplistTemp[:,2])
-    # 將最大值和最小值轉換為整數，去除小數點
-    _max = int(_max)+1
-    _min = int(_min)
-    #先將區間_from_entry和區間_to_entry清空
-    區間_from_entry.delete(0, tk.END)
-    區間_to_entry.delete(0, tk.END)
-    #將區間_from_entry和區間_to_entry填入最大值和最小值
-    區間_from_entry.insert(0,str(_min))
-    區間_to_entry.insert(0,str( _max))
-    #listTemp = pp.draw_stable_section(tmplistTemp[:,0],tmplistTemp[:,2])
+    
+    
+    # #將listTemp的數據中最穩定的那段區間的value顯示出來，並將回傳的區間最大值放到畫面上的區間_from_entry和區間_to_entry
+    # _max, _min,min_index,max_index = pp.draw_stable_section(tmplistTemp[:,0],tmplistTemp[:,2])
+    # # 將最大值和最小值轉換為整數，去除小數點
+    # _max = int(_max)+1
+    # _min = int(_min)
+    # #先將區間_from_entry和區間_to_entry清空
+    # 區間_from_entry.delete(0, tk.END)
+    # 區間_to_entry.delete(0, tk.END)
+    # #將區間_from_entry和區間_to_entry填入最大值和最小值
+    # 區間_from_entry.insert(0,str(_min))
+    # 區間_to_entry.insert(0,str( _max))
+    # #listTemp = pp.draw_stable_section(tmplistTemp[:,0],tmplistTemp[:,2])
 
     #將listTemp轉換為np.array
     #listTemp = np.array(listTemp)
@@ -77,7 +85,11 @@ def browse_file():
     #將listTemp的數據畫成散點圖
     # pp.draw_scatter(listTemp[:,0])
     
-    return tmplistTemp[min_index:max_index]
+    # return tmplistTemp[min_index:max_index]
+    #回傳listTemp，範圍為0到以100為單位的範圍
+    return listTemp[0:round(len(listTemp)/100)*100]
+
+    # return listTemp[0:1500]
 
 #Teager能量算子(TEO)的函數
 def Teager_power_function(Signal):
@@ -130,11 +142,20 @@ def calculate_skewness(data):
 
 #!!!!!!!!!!!!!!!主要執行的函數 !!!!!!!!!!!!!!!!!!!!
 def execute_action():
-    #選取檔案並取得tmplistTemp的值
-    tmplistTemp = browse_file()
     
-    #global tmplistTemp  # 聲明 tmplistTemp 是全域變數
-    if tmplistTemp.size == 0:
+    # for test....
+    
+    # 創建一個空的list，並放入一組完美的舒張壓收縮壓圖形參數
+    # listTemp = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    
+
+
+    # for test_End
+    
+    #選取檔案並取得tmplistTemp的值
+    原始數據_篩選離群值後 = browse_file()
+    
+    if len(原始數據_篩選離群值後)  == 0:
         # messagebox.showwarning("警告", "請先選取一個檔案")
         messagebox.showwarning("警告", "讀取到空的檔案!")
         return
@@ -152,31 +173,31 @@ def execute_action():
         # amplitude = amplitude_slider.get()
         #執行preProcessing(前處理邏輯)
         #前處理結果,msg = pp.preProcessing(int(time_window),int(time_window_index),file_label.cget("text"),int(區間_from_entry.get()),int(區間_to_entry.get()))
-        #2025.02.08改為從檔案選取區取得穩定區間的數據
-        前處理結果,msg = pp.preProcessing(int(time_window),int(time_window_index),tmplistTemp)
+        #2025.02.08改為從檔案選取區取得穩定區間的數據，並在此劃分好每個兔子耳朵，並計算出特徵值
+        # 前處理結果,msg = pp.preProcessing(int(time_window),int(time_window_index),原始數據_篩選離群值後)
         
+        特徵值_list,msg = pp.preProcessing(int(time_window),int(time_window_index),原始數據_篩選離群值後)
+        
+
         #若前處理結果msg不為空值，則跳出訊息提示
         if msg != "":
             messagebox.showinfo("執行結果", "前處理失敗" + msg)
             return
         
-        #找出波峰（peaks）與波谷（valleys）
-        peaks, valleys = pp.find_peaks_and_valleys(前處理結果)
-
         #取得第一個完整的rppg波
         # rppg_wave = pp.get_rppg_wave(peaks, valleys, 前處理結果)
 
 
         #計算特徵值
-        特徵值_list = pp.特徵值計算(前處理結果)
+        # 特徵值_list = pp.特徵值計算(前處理結果)
 
         # 執行按鈕動作時的提示框
-        result = f"Time Window: {time_window}\n"
-        result += f"Time Window Index: {time_window_index}\n"
-        # result += f"Amplitude: {amplitude}\n"
-        result += file_label.cget("text")
+        # result = f"Time Window: {time_window}\n"
+        # result += f"Time Window Index: {time_window_index}\n"
+        # # result += f"Amplitude: {amplitude}\n"
+        # result += file_label.cget("text")
         
-        #如果有勾選check_box，則執行writeExecl
+        #如果有勾選check_box，則執行writeExecl(將計算的特徵值寫入execl檔案中)
         if check_var.get() == 1:
             #取得目前檔案的路徑
             path = file_label.cget("text")
@@ -185,7 +206,9 @@ def execute_action():
             #data是一個list，裡面放的是特徵數據，格式像execl，每一欄是一個特徵
             pp.writeExecl(特徵值_list,"特徵值.xlsx") 
             #alert寫檔成功
-            messagebox.showinfo("執行結果", "檔案處理完成，位置在"+path)
+            # messagebox.showinfo("執行結果", "檔案處理完成，位置在"+path)
+            messagebox.showinfo("執行結果", "檔案處理完成，位置在/Users/yangjames/Documents/python/rppg-Branch202409")
+
         
     except ValueError as e:
         messagebox.showinfo("執行失敗:", e)
