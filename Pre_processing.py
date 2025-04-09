@@ -653,7 +653,8 @@ def plot_fourier_transform(signal, sampling_rate):
 def writeExecl(list,fileName):
     # import os
     # os.chdir('/content/drive/MyDrive/Colab Notebooks')  # Colab 換路徑使用
-
+    #弄一個新的陣列放置分割逗號後的資料
+    tempList = []
     import openpyxl
     wb = openpyxl.Workbook()    # 建立空白的 Excel 活頁簿物件
     wb.save(fileName)       # 儲存檔案
@@ -674,12 +675,12 @@ def writeExecl(list,fileName):
 
     for i in range(len(list)):
         # 把list[i]用逗號分割出此行的每個欄位
-        list[i] = list[i].split(",")
+        tempList = str(list[i]).split(",")
         # 將list[i]的每個欄位寫入Excel的每個欄位
-        s1.cell(row=i+1, column=1, value=str(list[i][0]))
+        # s1.cell(row=i+1, column=1, value=str(tempList))
 
-        # for j in range(len(list[i])):
-        #     s1.cell(row=i+1, column=j+1, value=str(list[i][j]))
+        for j in range(len(tempList)-1):
+            s1.cell(row=i+1, column=j+1, value=str(tempList[j]))
     
 
     # s2 = wb['工作表2']                        # 開啟工作表 2
