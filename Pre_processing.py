@@ -40,10 +40,10 @@ def read_numbers_exclude_first_last(file_path):
         
     return result
 
-def plot_data(r):
+def plot_data(r,標題):
     
     # 創建一個新的圖形
-    plt.figure()
+    # plt.figure()
 
     # 將列表轉換為 NumPy 陣列
     # r = np.array(r)
@@ -69,7 +69,7 @@ def plot_data(r):
     
     # plt.plot( r[:, 0])
     # 添加標題和標籤
-    plt.title('Values in List r')
+    plt.title(標題)
     plt.xlabel('Index')
     plt.ylabel('Value')
 
@@ -78,6 +78,7 @@ def plot_data(r):
 
     # 顯示圖形
     # plt.show()
+
 def 兩圖合併(np1,np2,_title):
     #微軟正黑體
     plt.rc('font', family='Heiti TC')
@@ -89,14 +90,16 @@ def 兩圖合併(np1,np2,_title):
     # xpoints = np1.array([0, 6])
     # ypoints = np1.array([0, 100])
     if np1 is not None :
-        plt.subplot(1, 2, 1)
+        # 將當前的圖形窗口分成 1 行 2 列，並激活第 1 個子圖。
+        plt.subplot(2, 1, 1)
         #plt.plot(xpoints,ypoints)
         plt.plot(  np1[:, 1],np1[:, 0].astype(float),label='Values', color='blue')
         plt.title(_title + "前")
 
     #plot 2:
     if np2 is not None :
-        plt.subplot(1, 2, 2)
+        # 將當前的圖形窗口分成 1 行 2 列，並激活第 2 個子圖。
+        plt.subplot(2, 1, 2)
         # plt.plot(x,y)
         plt.plot(  np2[:, 1],np2[:, 0].astype(float),label='Values', color='blue')
         plt.title(_title + "後")
@@ -167,7 +170,7 @@ def read_ALL_from_file(file_path):
     #numbers是一個二維的陣列，第一個維度是數字，第二個維度是時間
     numbers = []
 
-    _time = ""
+    start_time = ""
     
     with open(file_path, 'r') as file:
         #將檔案中的所有數字讀取出來成為一個字串
@@ -176,7 +179,7 @@ def read_ALL_from_file(file_path):
         timeWindowCnt = 0 #time window
         #設定一個y軸的數字，按照底下的條件來加入    
         y軸 = 0
-        
+        time_diff = 0
 
         #將每個數字轉換為小數點後兩位的字串格式，並加入到 numbers(List) 中
         for line in lines:
@@ -185,6 +188,7 @@ def read_ALL_from_file(file_path):
             data_tpm = line.split(",")
             # 並將字串轉換為浮點數，取到小數點後兩位，並加入到 numbers 中
             
+
             y軸 += 1
             #將data_tpm「1]的時間加入到numbers的第二欄位中
             # numbers.append([float(data_tpm[1].strip()),data_tpm[0][3:5].strip()+data_tpm[0][6:14].strip()])
@@ -194,8 +198,24 @@ def read_ALL_from_file(file_path):
             # #numbers.append([float(data_tpm[1].strip()),datetime.strptime(data_tpm[0],"%H:%M:%S.%f")])
             # numbers.append([float(data_tpm[1].strip()),pd.to_datetime("20241203 " + data_tpm[0],format="%Y%m%d %H:%M:%S.%f")]) 
 
+            #將data_tpm[0]轉換爲時間格式，並計算時間差
+            thistime = datetime.strptime(data_tpm[0],"%H:%M:%S.%f")
+            if start_time == "":
+                start_time = thistime
+
+            else:
+                #計算時間差
+                time_diff = thistime - start_time
+                #轉換為秒
+                time_diff = time_diff.total_seconds()
+                # #將data_tpm[0]轉換爲時間格式，並計算時間差
+                # numbers.append([float(data_tpm[1].strip()),y軸,thistime,time_diff])
+                _time = thistime
+
             try:
-                 numbers.append([float(data_tpm[1].strip()),y軸,datetime.strptime(data_tpm[0],"%H:%M:%S.%f")])
+                # numbers.append([float(data_tpm[1].strip()),y軸,datetime.strptime(data_tpm[0],"%H:%M:%S.%f")])
+                numbers.append([float(data_tpm[1].strip()),y軸,time_diff])
+
             except Exception as e:
                 continue
 
@@ -648,10 +668,18 @@ def writeExecl(list,fileName):
         ws = wb.create_sheet(sheet_name)
 
     s1 = wb['Sheet']                        # 開啟工作表 1
-    #將list寫入Excel wb
+    #將list寫入Excel wb,list中用逗號隔開的每個欄位的資料都會寫入到Excel的每個欄位中
+    
+    
+
     for i in range(len(list)):
-        for j in range(len(list[i])):
-            s1.cell(row=i+1, column=j+1, value=str(list[i][j]))
+        # 把list[i]用逗號分割出此行的每個欄位
+        list[i] = list[i].split(",")
+        # 將list[i]的每個欄位寫入Excel的每個欄位
+        s1.cell(row=i+1, column=1, value=str(list[i][0]))
+
+        # for j in range(len(list[i])):
+        #     s1.cell(row=i+1, column=j+1, value=str(list[i][j]))
     
 
     # s2 = wb['工作表2']                        # 開啟工作表 2
@@ -764,27 +792,86 @@ def get_rppg_wave(peaks, valleys, 前處理結果):
 
     return rppg_wave
 
+def 是否符合兔子耳朵的特徵(single_wave):
+    """
+    判斷單個波形是否符合兔子耳朵的特徵。
+    :param single_wave: np.array, 單個波形
+    :return: bool, 是否符合兔子耳朵的特徵
+    """
+    #1.是否有兩個峰值
+    #2.第一個峰值是否比第二個峰值高(暫時不看)
+    #3.是否只有一個谷值
+    #4.谷值是否在中間
+    #5.谷值是否比兩個峰值低
+
+    #找到峰值和谷值
+    # peaks, _ = find_peaks(single_wave[:,0])
+    # valleys, _ = find_peaks(-single_wave[:,0])
+    peaks,valleys = find_peaks_and_valleys_不畫圖(single_wave)
+    #1.是否有兩個峰值
+    if len(peaks) != 2:
+        return False
+    #2.第一個峰值是否比第二個峰值高
+    # if single_wave[peaks[0]] < single_wave[peaks[1]]:
+    #     return False
+    #3.是否只有一個谷值
+    if len(valleys) != 1:
+        return False
+    #4.先將peaks和valleys整合在同一個陣列
+    peaks_valleys = np.concatenate([peaks, valleys])
+    #判斷valleys[0]的index是否為1(判斷valleys位置是否在兩個峰值的中間)
+    if np.where(peaks_valleys == valleys[0])[0][0] != 2:
+        return False
+    
+    #5.谷值是否比兩個峰值低
+    # if single_wave[valleys[0]] > single_wave[peaks[0]] or single_wave[valleys[0]] > single_wave[peaks[1]]:
+    #     return False
+    
+    # 通過檢查，確認為兔子耳朵
+    return True
+
+def 單個兔子耳朵基線校準(single_wave):
+    """
+    對單個兔子耳朵波形進行基線校準。
+    :param single_wave: np.array, 單個兔子耳朵波形
+    :return: np.array, 基線校準後的波形
+    """
+    # 找到峰值和谷值
+    peaks, _ = find_peaks(single_wave)
+    valleys, _ = find_peaks(-single_wave)
+    
+    # 找到兩個峰值和一個谷值
+    peak1, peak2 = peaks
+    valley = valleys[0]
+    
+    # 基線校準
+    baseline = np.linspace(single_wave[peak1], single_wave[peak2], len(single_wave))
+    baseline[:valley] = single_wave[:valley]
+    baseline[valley:] = single_wave[valley]
+    
+    baseline_corrected_wave = single_wave - baseline
+    return baseline_corrected_wave
+
+
+"""2025.03.12沛蓁 基線校正(每個時窗去做基線校正)"""
+def baseline_removal(listTemp,polynomial_degree,window_size):
+    # polynomial_degree = 2  # 只適用於 ModPoly 和 IModPoly
+    # window_size = 50  # 設定每 50 個點執行一次基線校正
+
+    for i in range(0, len(listTemp), window_size):
+        # sub_array = listTemp[i:i+window_size, 0]  # 取出當前的50個點
+        sub_array = listTemp[i:i+window_size]  # 取出當前的50個點
+        if len(sub_array) < 2:  # 避免長度太短導致算法錯誤
+            continue
+        baseObj = BaselineRemoval(sub_array)
+        # listTemp[i:i+window_size, 0] = baseObj.ModPoly(polynomial_degree)  # 進行基線校正
+        listTemp[i:i+window_size] = baseObj.ModPoly(polynomial_degree)  # 進行基線校正
+    return listTemp
+
 # def preProcessing(timeWindow:int,第幾個timeWindow:int,file_path_r:str,區間_from:float,區間_to:float):
 def preProcessing(timeWindow:int,第幾個timeWindow:int,listTemp:list):
     #listTemp =[]
     listTemp2 =[] 
-
-    #一次將檔案中的所有數字讀取出來成為一個字串，但第一行和最後一行的數字是不需要的
-    #listTemp = read_from_file(file_path_r,timeWindow,第幾個timeWindow,區間_from,區間_to)
-    
-    # print( listTemp)
-
-    #將listTemp轉換為np.array
-    #listTemp = np.array(listTemp)
-
-    #跳出訊息提示整體的timeWindow的統計數據，包含最大值、最小值、平均值、標準差、中位數、總共幾個點
-    # print("整體的timeWindow的統計數據，包含最大值、最小值、平均值、標準差")
-    # print("最大值:" + str(np.max(listTemp[:,0])))
-    # print("最小值:" + str(np.min(listTemp[:,0])))
-    # print("平均值:" + str(np.mean(listTemp[:,0])))
-    # print("標準差:" + str(np.std(listTemp[:,0])))
-    # print("中位數:" + str(np.median(listTemp[:,0])))
-    # print("總共幾個點:" + str(len(listTemp[:,0])))
 
     #如果不足設定的timeWindow，則跳出訊息提示
     if len(listTemp) < timeWindow:
@@ -802,57 +889,85 @@ def preProcessing(timeWindow:int,第幾個timeWindow:int,listTemp:list):
     #將listTemp轉換為float
     # listTemp =listTemp.astype(float)
 
-
     #將ROI1的數字畫成圖型
     #plot_data(listTemp)
 
     #前處理:巴特沃夫處理器(帶通濾波器) ->  平滑化 -> 基線飄移(校準) -> 歸一化 -> 平滑化
     
-    # #處理離群值
-    # _value = listTemp[:,0]
-    # # """計算平均值與標準差"""
-    # mean_val = np.mean(_value)
-    # std_val = np.std(_value)
-    # lower_bound = mean_val - 2 * std_val
-    # upper_bound = mean_val + 2 * std_val
-    # print(f"--離群值範圍: 小於 {lower_bound:.2f} 或 大於 {upper_bound:.2f} 的數據將被排除")
+    #基線飄移(校準)
+    try:
+        listTemp_處理前 = listTemp.copy()
+        
+        listTemp[:,0] = baseline_removal(listTemp[:,0],2,200)
 
-    # """篩選數據"""
-    # listTemp = [(_value, time_second) for value, time_second in listTemp if lower_bound <= value <= upper_bound]
+        # 小波去除基線飄移
+        # original_signal = listTemp[:,0]
+        # listTemp[:,0] = wavelet_baseline_correction(original_signal)
+        # signal = listTemp[:,0]
+        # coeffs = pywt.wavedec(signal, 'db1')  # 小波分解
+        # coeffs[0] = np.zeros_like(coeffs[0])  # 将近似系数置零
+        # listTemp[:,0] = pywt.waverec(coeffs, 'db1')  # 重构信号
+        
+        
+        # for i in range(int((len(listTemp[:,0])/100))):
+        #     listTemp[i*100:i*100+100,0] = signal.detrend(listTemp[i*100:i*100+100,0])
+            
+        # for i in range(int((len(listTemp[:,0])/100))):
+        #     listTemp[i*100:i*100+100,0] = signal.detrend(listTemp[i*100:i*100+100,0])
+            
+        # # 找到波谷：通过找到信号的局部最小值（即反转信号后找到峰值）
+        # signal = listTemp[:,0]
+        # # 找到波谷：通过找到信号的局部最小值（即反转信号后找到峰值）
+        # inverted_signal = -signal
+        # peaks, _ = find_peaks(inverted_signal)
 
-    #  # """重新編排 y 軸"""
-    # # listTemp = [(value, new_y, time_second) for new_y, (value, time_second) in enumerate(filtered_data)]
+        # # 获取波谷的值
+        # valleys = signal[peaks]
 
-    # """計算離群值數量"""
-    # outlier_count = len(_value) - len(listTemp)
-    # total_after_outlier_removal = len(listTemp)
-    # print(f"--離群值數量: {outlier_count}")
-    # print(f"--扣除離群值後剩餘: {total_after_outlier_removal}")
-    
-    # print(f"輸出格式為\n{listTemp}")  ## list
+        # # 计算波谷的平均值，作为基准线
+        # baseline = np.mean(valleys)
 
-    # """繪製訊號圖"""
-    # plt.figure(figsize=(12, 5))
+        # # 校正信号：将所有波谷调整至基准线，并带动其他点
+        # corrected_signal = signal.copy()
 
-    # # 從list中提取值
-    # filtered_values = [val for val, _ in listTemp]
-    # time_second_index = [time_second for _, time_second in listTemp]
+        # for i in range(len(signal)):
+        #     # 计算当前点到基准线的差值
+        #     diff = signal[i] - baseline
+        #     # 调整所有点
+        #     corrected_signal[i] -= diff  # 向上调整
 
-    # plt.plot(time_second_index, filtered_values, color="b", markersize=3, linestyle="-", label="Signal")
+        # polynomial_degree=2 #only needed for Modpoly and IModPoly algorithm
+        # #for test基線校準
+        # baseObj=BaselineRemoval(listTemp[:,0])
+        # #baseObj=BaselineRemoval(input_array)
+        # #listTemp[:,0] = detrend(listTemp[:,0],100,'linear',500)
+        # listTemp[:,0]=baseObj.ModPoly(polynomial_degree)
+        # #baseObj=BaselineRemoval(listTemp[:,0])
+        # # listTemp[:,0]=baseline_correction(listTemp[:,1],listTemp[:,0], 2)
+        # #listTemp[:,0]=baseObj.IModPoly(polynomial_degree)
+        # # listTemp[:,0]=baseObj.ZhangFit()
+        # #將信號畫成圖型 
+        # 兩圖合併(listTemp_處理前,listTemp,"基線飄移(校準)")
+    except Exception as e:
+        print("基線飄移(校準)失敗" + str(e))
 
-    # # 添加均值虛線
-    # plt.axhline(mean_val, color="r", linestyle="--", label="Mean")
+    #平滑化
+    try:
+        #用.copy()複製一份listTemp_處理前，以便後續畫圖比較
+        listTemp_處理前 = listTemp.copy()
+        #判斷是一維還是二維
+        # print("一維還是二維" + str(listTemp[:,0].ndim))
+        
+        # window_length 控制平滑範圍大小，數值越大，平滑效果越強。
+        # polyorder 決定多項式的擬合複雜度，常用低階（如 2 或 3）。
+        # mode 用於選擇邊界處理方式，默認 'interp'。
+        listTemp[:,0] = scipy.signal.savgol_filter(listTemp[:,0].astype(float), 10, 3)
 
-    # # 標記離群值範圍
-    # plt.fill_between(time_second_index, lower_bound, upper_bound, color="gray", alpha=0.2, label="Mean ± 2STD")
+        #將信號畫成圖型 
+        # 兩圖合併(listTemp_處理前,listTemp,"平滑化")
+    except Exception as e:
+        print("平滑化失敗" + str(e))
 
-    # plt.xlabel("Time (seconds)")
-    # plt.ylabel("Value")
-    # plt.title("Filtered Signal")
-    # plt.legend()
-    # plt.grid(True)
-
-    # plt.show()
 
     #帶通濾波
     # try:
@@ -897,81 +1012,138 @@ def preProcessing(timeWindow:int,第幾個timeWindow:int,listTemp:list):
     #for test基線校準
     # input_array=[10,20,1.5,5,2,9,99,25,47]
 
+    # #歸一化
+    # try:
+    #     listTemp_處理前 = listTemp.copy()
+        
+    #     # avg = sum(listTemp[:,0])/len(listTemp[:,0])
+    #     # listTemp[:,0] = Z_ScoreNormalization(listTemp[:,0],avg,statistics.stdev(listTemp[:,0]))
+    #     # 創建MinMaxScaler實例，預設縮放到[0, 1]範圍
+    #     scaler = MinMaxScaler()
+
+    #     # 使用MinMaxScaler對特徵進行擬合和轉換
+    #     listTemp[:,0] = scaler.fit_transform(listTemp[:,0])
+    #     # listTemp[:,0] = listTemp_處理前[:,1]
+    #     兩圖合併(listTemp_處理前,listTemp,"歸一化")
+    # except Exception as e:
+    #             print("歸一化失敗" + str(e))
+
+    #第二次平滑化
     try:
         listTemp_處理前 = listTemp.copy()
-        
-        # 小波去除基線飄移
-        original_signal = listTemp[:,0]
-        listTemp[:,0] = wavelet_baseline_correction(original_signal)
-
-        # polynomial_degree=2 #only needed for Modpoly and IModPoly algorithm
-        # #for test基線校準
-        # baseObj=BaselineRemoval(listTemp[:,0])
-        # #baseObj=BaselineRemoval(input_array)
-        # #listTemp[:,0] = detrend(listTemp[:,0],100,'linear',500)
-        # listTemp[:,0]=baseObj.ModPoly(polynomial_degree)
-        # #baseObj=BaselineRemoval(listTemp[:,0])
-        # # listTemp[:,0]=baseline_correction(listTemp[:,1],listTemp[:,0], 2)
-        # #listTemp[:,0]=baseObj.IModPoly(polynomial_degree)
-        # # listTemp[:,0]=baseObj.ZhangFit()
-        # #將信號畫成圖型 
-        兩圖合併(listTemp_處理前,listTemp,"基線飄移(校準)")
+        listTemp[:,0] = scipy.signal.savgol_filter(listTemp[:,0].astype(float), 10,2)
+        # 兩圖合併(listTemp_處理前,listTemp,"第二次平滑化")
     except Exception as e:
-        print("基線飄移(校準)失敗" + str(e))
+        print("第二次平滑化失敗" + str(e))
 
+    # #做一階差分
+    # try:
+    #     listTemp[:,0] = np.diff(listTemp[:,0])
+    # except Exception as e:
+    #     print("一階差分失敗" + str(e))
 
-    #平滑化
-    try:
-        #用.copy()複製一份listTemp_處理前，以便後續畫圖比較
-        listTemp_處理前 = listTemp.copy()
-        #判斷是一維還是二維
-        print("一維還是二維" + str(listTemp[:,0].ndim))
+    #標出波峰和坡谷
+    peaks,valleys = find_peaks_and_valleys(listTemp)
+
+    #將上一步的peaks,valleys放進一個陣列裡並紀錄其為peaks or valleys
+    _兔子耳朵_count = 0
+    特徵值_list = []
+    #foreach valleys中的每個valleys
+    for i in range(len(valleys)):
+        #設定startPointValue為valleys[i]的值
+        startPointIndex = valleys[i]
+
+        #假如i+2 > len(valleys) 跳出迴圈
+        if i+2 > len(valleys)-1:
+            break
+
+        #設定endPoint為valleys[i+2]的值
+        #     #假如這個點和前後點的差距有超過0.1，則設定endPointIndex為這個點
+        #     if listTemp[valleys[i+2]] - listTemp[valleys[ii]] > 0.1:
+        #         endPointIndex = valleys[ii]
+        #         break
+        endPointIndex = valleys[i+2]
+
+        #將listTemp中從等於startPointIndex為起點，到等於endPointIndex為終點的值，放入 ＿array兔子耳朵
+        _兔子耳朵 = listTemp[startPointIndex:endPointIndex]
         
-        # window_length 控制平滑範圍大小，數值越大，平滑效果越強。
-        # polyorder 決定多項式的擬合複雜度，常用低階（如 2 或 3）。
-        # mode 用於選擇邊界處理方式，默認 'interp'。
-        listTemp[:,0] = scipy.signal.savgol_filter(listTemp[:,0].astype(float), 100, 2)
+        #基線飄移(校準)
+        try:
+            _兔子耳朵_處理前 = _兔子耳朵.copy()
+            #測試基線飄移(校準)
+            # _兔子耳朵[:,0] = baseline_removal(_兔子耳朵[:,0],2,len(_兔子耳朵))
+            _兔子耳朵[:,0] = baseline_removal(_兔子耳朵[:,0],2,30)
+            #處理前後比較
+            # 兩圖合併(_兔子耳朵_處理前,_兔子耳朵,"兔子耳朵基線飄移(校準)")
+        except Exception as e:
+            print("基線飄移(校準)失敗" + str(e))
 
-        #將信號畫成圖型 
-        兩圖合併(listTemp_處理前,listTemp,"平滑化")
-    except Exception as e:
-        print("平滑化失敗" + str(e))
-
-    #歸一化
-    try:
-        listTemp_處理前 = listTemp.copy()
+        #_兔子耳朵平滑化
+        try:
+            _兔子耳朵_處理前 = _兔子耳朵.copy()
+            _兔子耳朵[:,0] = scipy.signal.savgol_filter(_兔子耳朵[:,0].astype(float), 10,2)
+            # 兩圖合併(_兔子耳朵_處理前,_兔子耳朵,"_兔子耳朵平滑化")
+        except Exception as e:
+            print("_兔子耳朵平滑化失敗" + str(e))
         
-        # avg = sum(listTemp[:,0])/len(listTemp[:,0])
-        # listTemp[:,0] = Z_ScoreNormalization(listTemp[:,0],avg,statistics.stdev(listTemp[:,0]))
-        # 創建MinMaxScaler實例，預設縮放到[0, 1]範圍
-        scaler = MinMaxScaler()
+        #檢查是否符合兔子耳朵的特徵
+        if 是否符合兔子耳朵的特徵(_兔子耳朵) :
+            #如果符合，則將兔子耳朵畫成圖型
+            plot_data(_兔子耳朵,"符合兔子耳朵的特徵")  
+            #將符合兔子耳朵的特徵的兔子耳朵放入特徵值_list中的new row
+            特徵值_list.append(特徵值計算(_兔子耳朵))
+            
+            #如果是第一個符合兔子耳朵的特徵，則將表頭放入特徵值_list的第一欄
+            if _兔子耳朵_count == 0:
+                # 將表頭放入特徵值_list的第一欄
+                特徵值_list.insert(0, ['TKEO_均值', 'TKEO_變異數', 'TKEO_四分位距', 'TKEO_偏度','心率','峰度(Kurtosis)','偏度(skewness)'])  # 第一欄，表頭
 
-        # 使用MinMaxScaler對特徵進行擬合和轉換
-        listTemp[:,0:1] = scaler.fit_transform(listTemp[:,0:1])
-        listTemp[:,1] = listTemp_處理前[:,1]
-        兩圖合併(listTemp_處理前,listTemp,"歸一化")
-    except Exception as e:
-                print("歸一化失敗" + str(e))
+            _兔子耳朵_count += 1 
+            #plot_data(_兔子耳朵,"符合兔子耳朵的特徵")
+        else: #若否，則繼續下一個valleys
+            continue
 
-    #平滑化
-    # smooth_signal(listTemp)
+        #對_兔子耳朵做基線校準
+        # # 小波去除基線飄移
+        # original_signal = _兔子耳朵
+        # _兔子耳朵 = wavelet_baseline_correction(original_signal)
+        # signal = listTemp[:,0]
+        # coeffs = pywt.wavedec(signal, 'db1')  # 小波分解
+        # coeffs[0] = np.zeros_like(coeffs[0])  # 将近似系数置零
+        # listTemp[:,0] = pywt.waverec(coeffs, 'db1')  # 重构信号
+        
+        # _兔子耳朵2 = 單個兔子耳朵基線校準(_兔子耳朵)
+
+        # 兩圖合併(_兔子耳朵,_兔子耳朵2,"兔子耳朵基線校準")
     
+    
+    print("共有" + str(_兔子耳朵_count) + "個符合標準的兔子耳朵")
+    # 特徵值_list..append(['TKEO_均值', 'TKEO_變異數', 'TKEO_四分位距', 'TKEO_偏度','心率','峰度(Kurtosis)','偏度(skewness)'])  # 第一欄，表頭
+    
+
+    return 特徵值_list,""   
+    #跳出程式
+    # exit()
+
+        
+    
+
 
     # 進行DFT（傅立葉轉換）
 
     # # 生成一個示例的時域信號
-    # fs = 300  # 采樣頻率
-    # t = np.arange(0, 1, 1/fs)  # 時間序列
-    # frequency1 = 5  # 信號1的頻率（5 Hz）
-    # amplitude1 = 1  # 信號1的振幅
-    # signal1 = amplitude1 * np.sin(2 * np.pi * frequency1 * t)
+    # fs = 10  # 采樣頻率
+    # # t = np.arange(0, 1, 1/fs)  # 時間序列
+    # # frequency1 = 5  # 信號1的頻率（5 Hz）
+    # # amplitude1 = 1  # 信號1的振幅
+    # # signal1 = amplitude1 * np.sin(2 * np.pi * frequency1 * t)
 
-    # frequency2 = 20  # 信號2的頻率（20 Hz）
-    # amplitude2 = 0.5  # 信號2的振幅
-    # signal2 = amplitude2 * np.sin(2 * np.pi * frequency2 * t)
+    # # frequency2 = 20  # 信號2的頻率（20 Hz）
+    # # amplitude2 = 0.5  # 信號2的振幅
+    # # signal2 = amplitude2 * np.sin(2 * np.pi * frequency2 * t)
 
-    # # 合併兩個信號
-    # signal = signal1 + signal2
+    # # # 合併兩個信號
+    # # signal = signal1 + signal2
 
     # listTemp_處理前 = listTemp.copy()
     # fft_result = np.fft.fft(listTemp[:,0])
@@ -1005,10 +1177,6 @@ def preProcessing(timeWindow:int,第幾個timeWindow:int,listTemp:list):
     #             print("擷取0開始失敗" + str(e))
 
 
-
-    #跳出程式
-    # exit()
-
     # 計算SDNN
     # 需要的input是nni(NN-intervals)，並不是我們原本的signal，所以要先將nni運算出來，這邊就可以先用BiosPPy的ecg()得到
     # R-Peaks indices的值。
@@ -1030,16 +1198,13 @@ def preProcessing(timeWindow:int,第幾個timeWindow:int,listTemp:list):
     # lnLF = pyhrv.frequency_domain.welch_psd(nni = nni,
     #                             mode='dev')[0]['fft_log'][1]
      #當mode = 'dev'的時候就不會畫圖，共有三種mode，可依需求去選擇
-    return listTemp , ""
+    # return listTemp , ""
 
-def find_peaks_and_valleys(signal_data,):
-    
-    #把一個由datetime.datetime物件構成的時間序列轉換成用np.linspace表示的數值軸
-    # 以第一個時間點作為起點
-    start_time = signal_data[:,2][0]
-
-    # 轉換為從 0 開始的秒數列表
-    time = [(dt - start_time).total_seconds() for dt in signal_data[:,2]]
+def find_peaks_and_valleys(signal_data):
+    #畫圖時用時間欄位
+    time = signal_data[:,2]
+    #畫圖時用index欄位
+    # time = signal_data[:,1]
     
     
     signal_data = signal_data[:,0]
@@ -1048,10 +1213,10 @@ def find_peaks_and_valleys(signal_data,):
     signal_data = np.array(signal_data)
 
     # 尋找波峰 (peaks)
-    peaks, _ = signal.find_peaks(signal_data)
+    peaks, _ = signal.find_peaks(signal_data,distance=5)
 
     # 尋找波谷 (valleys)（透過反轉訊號後尋找peaks）
-    valleys, _ = signal.find_peaks(-signal_data)
+    valleys, _ = signal.find_peaks(-signal_data,distance=5)
 
     # 確保 peaks valleys 是整數陣列
     valleys = valleys.astype(int)
@@ -1066,6 +1231,8 @@ def find_peaks_and_valleys(signal_data,):
     # peak_points = np.column_stack((time[peaks], signal_data[peaks]))
     # valley_points = np.column_stack((time[valleys], signal_data[valleys]))
 
+    #微軟正黑體
+    plt.rc('font', family='Heiti TC')
     # 繪圖標示波峰和波谷
     plt.figure(figsize=(20, 10))
     plt.plot(time, signal_data, label='原始訊號')
@@ -1073,8 +1240,10 @@ def find_peaks_and_valleys(signal_data,):
     plt.plot(time[valleys], signal_data[valleys], "go", label='波谷')
     plt.plot(time[peaks], signal_data[peaks], "ro", label='波峰')
     
-
-    plt.xlabel('時間 (秒)')
+    #x軸的顯示範圍從50開始
+    # plt.xlim(0, 500)
+    
+    plt.xlabel('index')
     plt.ylabel('訊號振幅')
     plt.title('訊號波峰與波谷識別')
     plt.legend()
@@ -1087,6 +1256,30 @@ def find_peaks_and_valleys(signal_data,):
 
     # print("\n波谷位置 (時間, 振幅):")
     # print(valley_points)
+def find_peaks_and_valleys_不畫圖(signal_data):
+    #畫圖時用時間欄位
+    # time = signal_data[:,2]
+    #畫圖時用index欄位
+    time = signal_data[:,1]
+
+    #放訊號欄位
+    signal_data = signal_data[:,0]
+    
+    time = np.array(time)
+    signal_data = np.array(signal_data)
+
+    # 尋找波峰 (peaks)
+    peaks, _ = signal.find_peaks(signal_data)
+
+    # 尋找波谷 (valleys)（透過反轉訊號後尋找peaks）
+    valleys, _ = signal.find_peaks(-signal_data)
+
+    # 確保 peaks valleys 是整數陣列
+    valleys = valleys.astype(int)
+    peaks = peaks.astype(int)
+    
+    return peaks,valleys
+    
 
 def 特徵值計算(listTemp):
     
@@ -1142,7 +1335,7 @@ def 特徵值計算(listTemp):
 
     #for test....創建一個list，並放進一些測試用數據
     data = []
-    data.append(['TKEO_均值', 'TKEO_變異數', 'TKEO_四分位距', 'TKEO_偏度','心率','峰度(Kurtosis)','偏度(skewness)'])  # 第一欄，表頭
+    # data.append(['TKEO_均值', 'TKEO_變異數', 'TKEO_四分位距', 'TKEO_偏度','心率','峰度(Kurtosis)','偏度(skewness)'])  # 第一欄，表頭
     data.append([ TKEO_mean,TKEO_variance, TKEO_iqr, TKEO_skewness,bpm,_Kurtosis,_skewness])  # 第二欄以後，值
     # data.append([ 111, 113, 114])  # 第二欄以後，值
     # data.append([ 88, 99, 77])  # 第二欄以後，值
