@@ -488,7 +488,6 @@ def calculate_bpm(ecg_signal, sampling_rate):
     
     return bpm
 
-
 def fit_transform(X, y=None, **fit_params):
         """
         Fit to data, then transform it.
@@ -687,20 +686,6 @@ def writeExecl(list,fileName):
         for j in range(len(tempList)-1):
             s1.cell(row=i+1, column=j+1, value=str(tempList[j]))
     
-
-    # s2 = wb['工作表2']                        # 開啟工作表 2
-    # s1.sheet_properties.tabColor = 'ff0000'  # 修改工作表 1 頁籤顏色為紅色
-    # s2.sheet_properties.tabColor = 'ffff00'  # 修改工作表 2 頁籤顏色為黃色
-
-    # wb.create_sheet("工作表3")      # 插入工作表 3 在最後方
-    # wb.create_sheet("工作表1.5",1)  # 插入工作表 1.5 在第二個位置 ( 工作表 1 和 2 的中間 )
-    # wb.create_sheet("工作表0", 0)   # 插入工作表 0 在第一個位置
-
-    # wb.copy_worksheet(s2)          # 複製工作表 2 放到最後方
-
-    # s1.title='oxxo'                # 修改工作表 1 的名稱為 oxxo
-    # s2.title='studio'              # 修改工作表 2 的名稱為 studio
-
     wb.save(fileName)
 
 def draw_hist(data):
@@ -1095,15 +1080,16 @@ def preProcessing(timeWindow:int,第幾個timeWindow:int,listTemp:list):
         #檢查是否符合兔子耳朵的特徵
         if 是否符合兔子耳朵的特徵(_兔子耳朵) :
             #如果符合，則將兔子耳朵畫成圖型
-            plot_data(_兔子耳朵,"符合兔子耳朵的特徵")  
-            #將符合兔子耳朵的特徵的兔子耳朵放入特徵值_list中的new row
-            特徵值_list.append(特徵值計算(_兔子耳朵))
+            # plot_data(_兔子耳朵,"符合兔子耳朵的特徵")  
             
             #如果是第一個符合兔子耳朵的特徵，則將表頭放入特徵值_list的第一欄
             if _兔子耳朵_count == 0:
                 # 將表頭放入特徵值_list的第一欄
-                特徵值_list.insert(0, ['TKEO_均值', 'TKEO_變異數', 'TKEO_四分位距', 'TKEO_偏度','心率','峰度(Kurtosis)','偏度(skewness)'])  # 第一欄，表頭
-
+                特徵值_list.append(特徵值計算(_兔子耳朵,True))
+            
+            #將符合兔子耳朵的特徵的兔子耳朵放入特徵值_list中的new row
+            特徵值_list.append(特徵值計算(_兔子耳朵,False))
+            
             _兔子耳朵_count += 1 
             #plot_data(_兔子耳朵,"符合兔子耳朵的特徵")
         else: #若否，則繼續下一個valleys
@@ -1285,28 +1271,39 @@ def find_peaks_and_valleys_不畫圖(signal_data):
     peaks = peaks.astype(int)
     
     return peaks,valleys
-    
+ 
 
-def 特徵值計算(listTemp):
+def 特徵值計算(listTemp,是否為表頭):
+    #創建一個list，用來存放特徵值或表頭
+    data = []
+    
+    if 是否為表頭 == True:
+        # 將以下要運算特徵值說明作為表頭放入特徵值_list的第一欄
+        data.append(['TKEO_均值', 'TKEO_變異數', 'TKEO_四分位距', 'TKEO_偏度','心率'
+                     ,'峰度(Kurtosis)','偏度(skewness)','entropy','光譜熵_均值'
+                     ,'光譜熵_四分位距','光譜熵_偏度'
+                     ,'收縮壓的峰值','舒張壓的峰值','峰值Delt','香農熵'
+                     ,'峰值/均方根值','test'])  # 第一欄，表頭
+        return data
     
     #1.Teager-Kaiser 能量算子(TKEO)的均值、變異數、四分位距、偏度共4個特徵
     TeagerKaiser = Teager_power_function(listTemp[:,0])
 
-    #均值,四捨五入到小數點後第三位
+    #Teager-Kaiser均值,四捨五入到小數點後第三位
     TKEO_mean = round(np.mean(TeagerKaiser),3)
     
-    #變異數
+    #Teager-Kaiser變異數
     TKEO_variance = round(np.var(TeagerKaiser),3)
-    #四分位距
+    #Teager-Kaiser四分位距
     q1 = np.percentile(TeagerKaiser, 25)
     q3 = np.percentile(TeagerKaiser, 75)
     TKEO_iqr = round((q3 - q1),3)
-    #偏度
+    #Teager-Kaiser偏度
     TKEO_skewness = round(stats.skew(TeagerKaiser),3)
 
     #2.心率
     #心率
-    bpm = calculate_bpm(listTemp[:,0],15)
+    bpm = round(calculate_bpm(listTemp[:,0],15),3)
     
     #3.峰度(Kurtosis)
     #Kurtosis是一種統計量，用於描述數據分佈的形狀，可以告訴我們數據集中是否有很多極端值（遠離均值的值）
@@ -1327,23 +1324,94 @@ def 特徵值計算(listTemp):
     _entropy = round(entropy(numeric_data),3)
 
     #6. 
-    #光譜熵
+    #光譜熵(=頻譜熵)
     # 計算光證熵
-    _spectral_entropy = round(spectral_entropy(numeric_data, 15),3)
+    # _spectral_entropy = round(spectral_entropy(numeric_data, 15),3)
+    # FFT 設定
+    L_FFT = 512
+    Xn = np.fft.fft(numeric_data, n=L_FFT)
+    # freqs = np.fft.fftfreq(L_FFT, 1/Fs)
+    #對Xn作正規化
+    Xn = Xn / np.linalg.norm(Xn)
+    # 對Xn求熵
+    #對Xn的每一個值都求熵
+    for i in range(len(Xn)):
+        #對Xn的每一個值都求熵
+        Xn[i] = Xn[i] * np.log(Xn[i])
+    #計算Xn的均值、四分位距、偏度
+    Xn_mean = round(np.mean(Xn),3)
+    Xn_iqr = round(np.percentile(Xn, 75) - np.percentile(Xn, 25),3)
+    Xn_skewness = stats.skew(Xn)
+    # Xn_kurtosis = stats.kurtosis(Xn)
 
-    #7.
+    
+
+    # 頻(光)譜熵（Spectral Entropy）是一種衡量訊號在頻率域中能量分布的複雜性與隨機性的指標，常用在 RPPG、EEG、ECG 等生理訊號中。
+    # 🔹 概念簡介
+    # 頻譜熵會將訊號進行 傅立葉轉換（FFT），得到不同頻率上的能量分佈（功率譜）。
+    # 然後將這些能量正規化為機率分布，再使用Shannon entropy公式計算訊號在頻域的「混亂程度」。
+    # 🔸 數值意義（越高越雜亂）：
+    # 頻譜熵數值	意義
+    # 接近 0	頻譜能量集中（單一或穩定週期）
+    # 趨近最大值	能量分布廣泛（隨機、無週期性）
+    
+    # 7.收縮壓和舒張的峰值及Delt(收縮壓峰值時間和舒張壓的峰值時間的差)
+    
+    #標出波峰和坡谷
+    # peaks,valleys = find_peaks_and_valleys(listTemp)
+    peaks,valleys = find_peaks_and_valleys_不畫圖(listTemp)
+    
+    #收縮壓峰值 #預設為第一個波峰
+    # systolic_peak = np.max(listTemp)
+    systolic_peak = round(listTemp[:,0][peaks[0]],3)
+    #舒張壓峰值 #預設為第二個波峰
+    # diastolic_peak = np.min(numeric_data)
+    diastolic_peak = round(listTemp[:,0][peaks[1]],3)
+
+    #產生一個空的timestamp
+    # 初始化一個最小的時間戳
+    timestamp = datetime.min
+    
+    #將listTemp[:,2][peaks[0]]轉為timestamp
+    systolic_peak_time_1 = datetime.fromtimestamp(listTemp[:,2][peaks[0]])
+    systolic_peak_time_2 = datetime.fromtimestamp(listTemp[:,2][peaks[1]])
+
+    #Delt(收縮壓峰值時間和舒張壓的峰值時間的差)
+    Delt = systolic_peak_time_1 - systolic_peak_time_2
+    Delt_show = str(Delt.microseconds)
+
+    #8.香農熵 (Entropy)Entropy=−t∑t=1p(S(t))log2 p(S(t)
+    # 熵是一種統計量，用於描述數據的不確定性
+    
+    # 統計每個值的出現次數並轉為機率
+    values, counts = np.unique(listTemp[:,0], return_counts=True)
+    probabilities = counts / counts.sum()
+
+    # 計算香農熵
+    Shannon_Entropy = round(-np.sum(probabilities * np.log2(probabilities)),3)
+
+    #9.Peak to RMS（峰值/均方根值）•Peak to RMS比值越大：表示信號的瞬時最大值遠高於其平
+    # 均能量水平，具有較大的動態範圍。
+    # •Peak to RMS比值越小：表示信號的瞬時最大值接近其平均
+    # 能量水平，具有較小的動態範圍。
+    #V_peak：信號的峰值。這是信號在一段時間達到的最大值。
+    V_peak = np.max(listTemp[:,0])
+    #訊號的 RMS（Root Mean Square）均方根值 常見於訊號能量、電壓、聲音強度等分析中。
+    V_RMS = np.sqrt(np.sum(listTemp[:,0]**2)/len(listTemp))
+    Peak_to_RMS = round((V_peak / V_RMS),3)
+
+    #?.
     #傅立葉變換
     # 繪製傅立葉變換
     #plot_fourier_transform(numeric_data, 15)
 
-    #8.
-
-
-
-    #for test....創建一個list，並放進一些測試用數據
-    data = []
+    
     # data.append(['TKEO_均值', 'TKEO_變異數', 'TKEO_四分位距', 'TKEO_偏度','心率','峰度(Kurtosis)','偏度(skewness)'])  # 第一欄，表頭
-    data.append([ TKEO_mean,TKEO_variance, TKEO_iqr, TKEO_skewness,bpm,_Kurtosis,_skewness])  # 第二欄以後，值
+    #創建表頭，包含上面的所有特徵
+
+    data.append([ TKEO_mean,TKEO_variance, TKEO_iqr, TKEO_skewness,bpm,_Kurtosis
+                 ,_skewness,_entropy,Xn_mean,Xn_iqr,Xn_skewness,systolic_peak,diastolic_peak,
+                 Delt_show,Shannon_Entropy,Peak_to_RMS,0])  # 第二欄以後，值
     # data.append([ 111, 113, 114])  # 第二欄以後，值
     # data.append([ 88, 99, 77])  # 第二欄以後，值
 
